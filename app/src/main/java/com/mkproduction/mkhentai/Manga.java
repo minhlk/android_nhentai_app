@@ -109,6 +109,7 @@ public class Manga implements Serializable {
                 ", imageUrls=" + imageUrls +
                 ", thumbnailUrls=" + thumbnailUrls +
                 ", url='" + url + '\'' +
+                ", isFav=" + isFav +
                 '}';
     }
 }

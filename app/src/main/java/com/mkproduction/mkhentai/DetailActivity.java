@@ -1,11 +1,12 @@
 package com.mkproduction.mkhentai;
 
+import android.content.Context;
+import android.os.Bundle;
 import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.ImageView;
@@ -22,14 +23,16 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-public class DetailActivity extends AppCompatActivity {
-    private static final String SHARED_PREFERENCES_FAV_LIST = "favorite_manga";
+public class DetailActivity extends AppCompatActivity implements IFetchData {
     private static final String HOME_URL = "https://nhentai.net";
-    TextView tags, title;
-    FloatingActionButton fabView, fabFav;
-    CollapsingToolbarLayout collapsingToolbar;
-    ImageView toolbarImage;
-    Manga manga;
+    private static final int IN_FAV = 1;
+    private static final int NOT_IN_FAV = 0;
+    private TextView tags, title;
+    private FloatingActionButton fabView, fabFav;
+    private CollapsingToolbarLayout collapsingToolbar;
+    private ImageView toolbarImage;
+    private Manga manga;
+    private Context context;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,10 +46,21 @@ public class DetailActivity extends AppCompatActivity {
         toolbarImage = findViewById(R.id.toolbarImage);
         tags = findViewById(R.id.tags);
         title = findViewById(R.id.title);
+        context = getApplicationContext();
         String url = getIntent().getExtras().getString("url");
         makeRequest(url);
 
 
+    }
+
+    private void changeFavState(int state) {
+        if (state == IN_FAV) {
+            fabFav.setImageDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.ic_bookmark_white_24dp, null));
+            fabFav.setTag(IN_FAV);
+        } else {
+            fabFav.setImageDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.ic_bookmark_border_white_24dp, null));
+            fabFav.setTag(NOT_IN_FAV);
+        }
     }
 
     public void makeRequest(final String url) {
@@ -55,19 +69,17 @@ public class DetailActivity extends AppCompatActivity {
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        manga = parseInfoFromDetailPage(response);
+                        manga = parseResponse(response);
                         manga.setUrl(url.replace(HOME_URL, ""));
                         collapsingToolbar.setTitle(manga.getTitle());
                         title.setText(manga.getTitle());
                         tags.setText(manga.getTags());
-                        Glide.with(getApplicationContext()).load(manga.getCoverImage()).into(toolbarImage);
-                        if (SharedPreferencesManager.isContain(getApplicationContext(), manga)) {
-                            fabFav.setImageDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.ic_bookmark_white_24dp, null));
-                            fabFav.setTag(1);
-                        } else {
-                            fabFav.setImageDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.ic_bookmark_border_white_24dp, null));
-                            fabFav.setTag(0);
-                        }
+                        Glide.with(context).load(manga.getCoverImage()).into(toolbarImage);
+
+                        if (SharedPreferencesManager.getInstance(context).isContain(manga))
+                            changeFavState(IN_FAV);
+                        else
+                            changeFavState(NOT_IN_FAV);
 
                         fabView.setOnClickListener(new View.OnClickListener() {
                             @Override
@@ -79,27 +91,23 @@ public class DetailActivity extends AppCompatActivity {
                             @Override
                             public void onClick(View v) {
                                 //SAVE OR REMOVE FAVORITE
-                                SharedPreferencesManager.AddOrRemove(getApplicationContext(), manga);
-                                fabFav.setTag(1 - (int) fabFav.getTag());
-                                if (fabFav.getTag().equals(1)) {
-                                    fabFav.setImageDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.ic_bookmark_white_24dp, null));
-                                } else {
-                                    fabFav.setImageDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.ic_bookmark_border_white_24dp, null));
-                                }
+                                SharedPreferencesManager.getInstance(context).AddOrRemove(manga);
+                                changeFavState(1 - (int) fabFav.getTag());
                             }
                         });
                     }
                 }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-//                t1.setText("That didn't work!");
+                System.out.println(error.toString());
             }
         });
 
         queue.add(stringRequest);
     }
 
-    public Manga parseInfoFromDetailPage(String html) {
+    @Override
+    public Manga parseResponse(String html) {
         Document doc = Jsoup.parse(html);
         //GET MANGA INFO
         String title = doc.getElementById("info").getElementsByTag("h1").text();
@@ -120,23 +128,10 @@ public class DetailActivity extends AppCompatActivity {
         manga.setTags(tags);
 
         return manga;
-
-
-//       im1.setImage( ImageSource.uri(temp));
-//        Glide.with(this).load(temp).into(im1);
-
-//        Glide.with(this)
-//                .asBitmap()
-//                .load(temp)
-//                .into(new SimpleTarget<Bitmap>() {
-//                    @Override
-//                    public void onResourceReady(Bitmap resource, Transition<? super Bitmap> transition) {
-//                        im1.setImage(ImageSource.bitmap(resource));
-//                    }
-//                });
     }
 
-    public void startFragment(Manga manga) {
+
+    private void startFragment(Manga manga) {
         Bundle bundle = new Bundle();
         bundle.putSerializable("manga", manga);
         bundle.putInt("position", 0);
@@ -145,5 +140,6 @@ public class DetailActivity extends AppCompatActivity {
         newFragment.setArguments(bundle);
         newFragment.show(ft, "slideshow");
     }
+
 
 }

@@ -16,8 +16,8 @@ import android.view.MenuItem;
 import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
-    Toolbar toolbar;
-    NavigationView navigationView;
+    private Toolbar toolbar;
+    private NavigationView navigationView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,15 +51,14 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
         // Handle navigation view item clicks here.
-
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        FragmentTransaction ft = fragmentManager.beginTransaction();
 
         int id = item.getItemId();
 
         if (id == R.id.nav_home) {
             toolbar.setTitle("Home");
-            FragmentManager fragmentManager = getSupportFragmentManager();
             HomeFragment fragment = HomeFragment.newInstance();
-            FragmentTransaction ft = fragmentManager.beginTransaction();
 
             if (!fragment.isHomePage()) {
                 fragmentManager.popBackStackImmediate();
@@ -75,18 +74,14 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         } else if (id == R.id.nav_genres) {
             toolbar.setTitle("Genres");
-            FragmentManager fragmentManager = getSupportFragmentManager();
             Fragment fragment = GenreFragment.newInstance();
-            FragmentTransaction ft = fragmentManager.beginTransaction();
             ft.replace(R.id.flContent, fragment, "genre_fragment");
             ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
             ft.commit();
 
         } else if (id == R.id.nav_fav) {
             toolbar.setTitle("Favorites");
-            FragmentManager fragmentManager = getSupportFragmentManager();
             Fragment fragment = FavoriteFragment.newInstance();
-            FragmentTransaction ft = fragmentManager.beginTransaction();
             ft.replace(R.id.flContent, fragment, "favorite_fragment");
             ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
             ft.commit();

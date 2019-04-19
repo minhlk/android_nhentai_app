@@ -10,17 +10,30 @@ import java.util.List;
 
 public class SharedPreferencesManager {
 
-    private static final String SHARED_PREFERENCES_FAV_LIST = "favorite_manga";
-    public static SharedPreferences sharedPreferences;
+    private static SharedPreferences sharedPreferences;
+    private static SharedPreferencesManager sm;
+    private Gson gson = new Gson();
+    private String SharePreferenceKey = "favorite_manga";
 
-    public static void AddOrRemove(Context context, Manga manga) {
-        sharedPreferences = context.getSharedPreferences(SHARED_PREFERENCES_FAV_LIST, Context.MODE_PRIVATE);
-        String jMangas = sharedPreferences.getString(SHARED_PREFERENCES_FAV_LIST, "");
+    private SharedPreferencesManager() {
+//        this.context = context;
+    }
+
+    public static SharedPreferencesManager getInstance(Context context) {
+        if (sm == null) {
+            sm = new SharedPreferencesManager();
+            sharedPreferences = context.getSharedPreferences("KEY", Context.MODE_PRIVATE);
+        }
+        return sm;
+    }
+
+    public void AddOrRemove(Manga manga) {
+
+        String json = sharedPreferences.getString(SharePreferenceKey, "");
         List<Manga> mangas = new ArrayList<>();
-        Gson gson = new Gson();
         boolean isFav = false;
-        if (!jMangas.isEmpty())
-            mangas = gson.fromJson(jMangas, new TypeToken<List<Manga>>() {
+        if (!json.isEmpty())
+            mangas = gson.fromJson(json, new TypeToken<List<Manga>>() {
             }.getType());
 
         for (Manga m : mangas) {
@@ -34,33 +47,30 @@ public class SharedPreferencesManager {
         if (!isFav)
             mangas.add(manga);
         SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putString(SHARED_PREFERENCES_FAV_LIST, gson.toJson(mangas));
-        editor.commit();
+        editor.putString(SharePreferenceKey, gson.toJson(mangas));
+        editor.apply();
     }
 
-    public static boolean isContain(Context context, Manga manga) {
-        sharedPreferences = context.getSharedPreferences(SHARED_PREFERENCES_FAV_LIST, context.MODE_PRIVATE);
-        String jMangas = sharedPreferences.getString(SHARED_PREFERENCES_FAV_LIST, "");
+    public boolean isContain(Manga manga) {
+        String json = sharedPreferences.getString(SharePreferenceKey, "");
         List<Manga> mangas = new ArrayList<>();
-        Gson gson = new Gson();
-        boolean isFav = false;
-        if (!jMangas.isEmpty())
-            mangas = gson.fromJson(jMangas, new TypeToken<List<Manga>>() {
+
+        if (!json.isEmpty())
+            mangas = gson.fromJson(json, new TypeToken<List<Manga>>() {
             }.getType());
         for (Manga m : mangas)
             if (m.getTitle().equals(manga.getTitle()))
                 return true;
         return false;
     }
-    public static List<Manga> getAll(Context context){
-        //TODO : GET SHAREDPREFERENCES MANGAS
-        SharedPreferences sharedPreferences = context.getSharedPreferences(SHARED_PREFERENCES_FAV_LIST, context.MODE_PRIVATE);
-        // Get saved string data in it.
-        String jsonMangas = sharedPreferences.getString(SHARED_PREFERENCES_FAV_LIST, "");
+
+    public List<Manga> getAll() {
+
+        String json = sharedPreferences.getString(SharePreferenceKey, "");
         List<Manga> mangas = new ArrayList<>();
-        if(!jsonMangas.isEmpty()){
-            Gson gson = new Gson();
-            mangas = gson.fromJson(jsonMangas, new TypeToken<List<Manga>>(){}.getType());
+        if (!json.isEmpty()) {
+            mangas = gson.fromJson(json, new TypeToken<List<Manga>>() {
+            }.getType());
 
         }
         return mangas;

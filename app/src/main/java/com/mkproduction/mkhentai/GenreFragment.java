@@ -4,8 +4,13 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.support.v7.widget.*;
-import android.view.*;
+import android.support.v7.widget.DividerItemDecoration;
+import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
@@ -20,7 +25,7 @@ import org.jsoup.select.Elements;
 import java.util.ArrayList;
 import java.util.List;
 
-public class GenreFragment extends Fragment  {
+public class GenreFragment extends Fragment implements IFetchListData {
     private String home_url = "https://nhentai.net/tags/?page=";
     RecyclerView rcGenre;
     GenreRcAdapter adapter;
@@ -45,19 +50,19 @@ public class GenreFragment extends Fragment  {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         //TODO : GET GENRES
-        fetchGenrePage(page++);
+        makeRequest(page++);
         //TODO : RCGENRES
         rcGenre = view.findViewById(R.id.rcGenre);
         adapter = new GenreRcAdapter(genres);
         rcGenre.addItemDecoration(new DividerItemDecoration(getActivity(), LinearLayoutManager.VERTICAL));
         rcGenre.setAdapter(adapter);
-        GridLayoutManager gridLayoutManager = new GridLayoutManager(getActivity(),2);
+        GridLayoutManager gridLayoutManager = new GridLayoutManager(getActivity(), 2);
 
         rcGenre.setLayoutManager(gridLayoutManager);
         rcGenre.addOnScrollListener(new EndlessRecyclerViewScrollListener(gridLayoutManager) {
             @Override
             public void onLoadMore(int index, int totalItemsCount, RecyclerView view) {
-                fetchGenrePage(page++);
+                makeRequest(page++);
             }
         });
     }
@@ -67,27 +72,30 @@ public class GenreFragment extends Fragment  {
         super.onCreate(savedInstanceState);
     }
 
-    public void fetchGenrePage(int page) {
+
+    @Override
+    public void makeRequest(int page) {
         String url = home_url + page;
         RequestQueue queue = Volley.newRequestQueue(getActivity());
         StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        genres.addAll(parseInfoFromGenre(response));
+                        genres.addAll(parseResponse(response));
                         adapter.notifyDataSetChanged();
                     }
                 }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-//                t1.setText("That didn't work!");
+                System.out.println(error);
             }
         });
 
         queue.add(stringRequest);
     }
 
-    public List<Genre> parseInfoFromGenre(String html) {
+    @Override
+    public List<Genre> parseResponse(String html) {
         Document doc = Jsoup.parse(html);
         Elements gallery = doc.getElementById("tag-container").getElementsByTag("a");
         List<Genre> genres = new ArrayList<>();
@@ -97,13 +105,8 @@ public class GenreFragment extends Fragment  {
             String title = el.text();
             Genre genre = new Genre(title, url);
             genres.add(genre);
-
         }
-
-
         return genres;
-
-
     }
 }
 

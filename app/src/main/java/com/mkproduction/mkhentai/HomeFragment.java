@@ -26,18 +26,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class HomeFragment extends Fragment implements SearchView.OnQueryTextListener {
+public class HomeFragment extends Fragment implements SearchView.OnQueryTextListener, IFetchListData {
     public static final int HOME_OPTION = 1;
     public static final int GENRE_OPTION = 2;
     public static final int TITLE_OPTION = 3;
-    FloatingActionButton fab;
-    RecyclerView rcHome;
-    List<Manga> mangas = new ArrayList<>();
-    HomeRcAdapter adapter;
+    private static HomeFragment homeFragment = null;
+    private FloatingActionButton fab;
+    private RecyclerView rcHome;
+    private List<Manga> mangas = new ArrayList<>();
     private boolean isHomePage = true;
-    int page = 1;
+    private HomeRcAdapter adapter;
     private String homeUrl = "https://nhentai.net?page=";
-    public static HomeFragment homeFragment = null;
+    private int page = 1;
 
     public static HomeFragment newInstance() {
         if (homeFragment == null) {
@@ -47,10 +47,10 @@ public class HomeFragment extends Fragment implements SearchView.OnQueryTextList
         return homeFragment;
     }
 
-    public void setTag(String tagUrl,int option) {
+    public void setTag(String tagUrl, int option) {
         page = 1;
         mangas = new ArrayList<>();
-        switch (option){
+        switch (option) {
             case HOME_OPTION:
                 homeUrl = "https://nhentai.net/?page=";
                 setHomePage(true);
@@ -86,8 +86,7 @@ public class HomeFragment extends Fragment implements SearchView.OnQueryTextList
 
             }
         });
-        FetchHomePage(page++);
-        System.out.println(homeUrl);
+        makeRequest(page++);
         adapter = new HomeRcAdapter(mangas);
         rcHome.addItemDecoration(new DividerItemDecoration(getActivity(), LinearLayoutManager.VERTICAL));
         rcHome.setAdapter(adapter);
@@ -96,48 +95,73 @@ public class HomeFragment extends Fragment implements SearchView.OnQueryTextList
         rcHome.addOnScrollListener(new EndlessRecyclerViewScrollListener(linearLayout) {
             @Override
             public void onLoadMore(int index, int totalItemsCount, RecyclerView view) {
-                FetchHomePage(page++);
+                makeRequest(page++);
             }
         });
 
 
     }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
     }
+
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         inflater.inflate(R.menu.menu_main, menu);
-        SearchView searchView = (SearchView)menu.findItem(R.id.searchBar).getActionView();
+        SearchView searchView = (SearchView) menu.findItem(R.id.searchBar).getActionView();
         searchView.setOnQueryTextListener(this);
         super.onCreateOptionsMenu(menu, inflater);
     }
 
-    public void FetchHomePage(int page) {
+    public boolean isHomePage() {
+        return isHomePage;
+    }
+
+    public void setHomePage(boolean homePage) {
+        isHomePage = homePage;
+    }
+
+
+    @Override
+    public boolean onQueryTextSubmit(String s) {
+        setTag(s, TITLE_OPTION);
+        getFragmentManager().beginTransaction().detach(this).attach(this).commit();
+        return true;
+    }
+
+    @Override
+    public boolean onQueryTextChange(String s) {
+        return false;
+    }
+
+
+    @Override
+    public void makeRequest(int page) {
         String url = homeUrl + page;
         RequestQueue queue = Volley.newRequestQueue(getActivity());
         StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        mangas.addAll(parseInfoFromHomePage(response));
+                        mangas.addAll(parseResponse(response));
                         adapter.notifyDataSetChanged();
                     }
                 }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
 
-//                t1.setText("That didn't work!");
+                System.out.println(error);
             }
         });
 
         queue.add(stringRequest);
     }
 
-    public List<Manga> parseInfoFromHomePage(String html) {
-
+    @Override
+    public List<Manga> parseResponse(String html) {
         Document doc = Jsoup.parse(html);
         Elements gallery = doc.getElementsByClass("gallery");
         List<Manga> mangas = new ArrayList<>();
@@ -153,31 +177,5 @@ public class HomeFragment extends Fragment implements SearchView.OnQueryTextList
             mangas.add(manga);
         }
         return mangas;
-
-
     }
-
-    public boolean isHomePage() {
-        return isHomePage;
-    }
-
-    public void setHomePage(boolean homePage) {
-        isHomePage = homePage;
-    }
-
-
-    @Override
-    public boolean onQueryTextSubmit(String s) {
-        setTag(s,TITLE_OPTION);
-        getFragmentManager().beginTransaction().detach(this).attach(this).commit();
-        return true;
-    }
-
-    @Override
-    public boolean onQueryTextChange(String s) {
-        return false;
-    }
-
-
-
 }

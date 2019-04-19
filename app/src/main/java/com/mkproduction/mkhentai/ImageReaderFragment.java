@@ -14,7 +14,6 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
-
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.SimpleTarget;
 import com.bumptech.glide.request.transition.Transition;
@@ -23,7 +22,6 @@ import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
 
 
 public class ImageReaderFragment extends DialogFragment implements SeekBar.OnSeekBarChangeListener {
-    private String TAG = ImageReaderFragment.class.getSimpleName();
     private Manga manga;
     private ViewPager viewPager;
     private MyViewPagerAdapter myViewPagerAdapter;
@@ -95,7 +93,6 @@ public class ImageReaderFragment extends DialogFragment implements SeekBar.OnSee
     private void displayMetaInfo(int position) {
         lblCount.setText((position + 1) + " of " + manga.getSize());
         lblTitle.setText(manga.getTitle());
-//        lblDate.setText(image.getTimestamp());
     }
 
     @Override
@@ -139,13 +136,6 @@ public class ImageReaderFragment extends DialogFragment implements SeekBar.OnSee
 
             final SubsamplingScaleImageView imageViewPreview = view.findViewById(R.id.image_preview);
 
-
-//            Glide.with(getActivity()).load(manga.getImage(position))
-//                    .thumbnail(0.5f)
-////                    .crossFade()
-//                    .diskCacheStrategy(DiskCacheStrategy.ALL)
-//                    .into(imageViewPreview);
-
             Glide.with(getActivity())
                 .asBitmap()
                 .load(manga.getImage(position))
@@ -183,7 +173,7 @@ public class ImageReaderFragment extends DialogFragment implements SeekBar.OnSee
 
         @Override
         public boolean isViewFromObject(View view, Object obj) {
-            return view == ((View) obj);
+            return view == obj;
         }
 
 
